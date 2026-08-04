@@ -17,9 +17,7 @@ st.title("📊 Watchlist top movers")
 st.caption("Track your **watchlist** and spot the biggest **gainers** and **losers** at a glance.")
 
 # Default Watchlist
-DEFAULT_TICKERS = [
-"AAPL", "TSLA", "META", "GOOG"
-]
+DEFAULT_TICKERS = [ "AAPL", "TSLA", "META", "GOOG" ]
 
 # Sidebar controls
 with st.sidebar:
@@ -382,6 +380,26 @@ with tab_holdings:
                     save_json(HOLDINGS_FILE, st.session_state.holdings)
                     save_json(SOLD_FILE, st.session_state.sold_history)
                     st.toast(f"Recorded sale of {sold['Ticker']}", icon=":material/check_circle:")
+                    st.rerun()
+
+            st.write("**Added one by mistake? Remove it (no sale recorded):**")
+            with st.form("remove_holding_form", clear_on_submit=True):
+                remove_idx = st.selectbox(
+                    "Holding to remove",
+                    options=range(len(st.session_state.holdings)),
+                    format_func=lambda i: (
+                        f"{st.session_state.holdings[i]['Ticker']} — "
+                        f"{st.session_state.holdings[i]['Shares']} sh @ "
+                        f"${st.session_state.holdings[i]['Buy Price']:.2f} "
+                        f"(bought {st.session_state.holdings[i]['Buy Date']})"
+                    ),
+                    key="remove_idx",
+                )
+                if st.form_submit_button("Remove entry", icon=":material/delete:", width="stretch"):
+                    removed = st.session_state.holdings.pop(remove_idx)
+                    save_json(HOLDINGS_FILE, st.session_state.holdings)
+                    st.toast(f"Removed {removed['Ticker']} — no sale recorded", icon=":material/delete:")
+                    st.rerun()
     else:
         st.info("You don't have any holdings yet — add one above.", icon=":material/info:")
 
@@ -463,3 +481,22 @@ with tab_holdings:
                         "Sell Date": st.column_config.DateColumn("Sell date"),
                     },
                 )
+
+                st.write("**Made a mistake? Delete a sold entry:**")
+                with st.form("delete_sold_form", clear_on_submit=True):
+                    del_idx = st.selectbox(
+                        "Entry to delete",
+                        options=range(len(st.session_state.sold_history)),
+                        format_func=lambda i: (
+                            f"{st.session_state.sold_history[i]['Ticker']} — "
+                            f"{st.session_state.sold_history[i]['Shares']} sh, bought "
+                            f"${st.session_state.sold_history[i]['Buy Price']:.2f}, sold "
+                            f"${st.session_state.sold_history[i]['Sell Price']:.2f} "
+                            f"on {st.session_state.sold_history[i]['Sell Date']}"
+                        ),
+                    )
+                    if st.form_submit_button("Delete entry", icon=":material/delete:", width="stretch"):
+                        removed = st.session_state.sold_history.pop(del_idx)
+                        save_json(SOLD_FILE, st.session_state.sold_history)
+                        st.toast(f"Deleted {removed['Ticker']} sold entry", icon=":material/delete:")
+                        st.rerun()
